@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Aprende SQL de forma interactiva en tu navegador - SQL Learn PWA"
+    />
+    <meta name="theme-color" content="#4F46E5" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>SQL Learn PWA - Aprende SQL Interactivo</title>
+
+    <!-- CodeMirror CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/dracula.min.css"
+    />
+  </head>
+  <body>
+    <div id="app">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-content">
+          <div class="logo">
+            <svg
+              class="logo-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 2L2 7L12 12L22 7L12 2Z"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M2 17L12 22L22 17"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M2 12L12 17L22 12"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <h1>SQL Learn</h1>
+          </div>
+          <nav class="nav">
+            <button id="btn-install" class="btn btn-outline" style="display: none">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Instalar App
+            </button>
+          </nav>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <main class="main-container">
+        <!-- Sidebar - Guía Didáctica -->
+        <aside class="sidebar">
+          <div class="sidebar-header">
+            <h2>Guía de Aprendizaje</h2>
+            <span class="progress-badge" id="progress-badge">0/9 Módulos</span>
+          </div>
+          <div class="module-list" id="module-list">
+            <!-- Modules will be dynamically inserted here -->
+          </div>
+        </aside>
+
+        <!-- Content Area -->
+        <section class="content-area">
+          <!-- Lesson Panel -->
+          <div class="lesson-panel">
+            <div class="lesson-header">
+              <h2 id="lesson-title">Bienvenido a SQL Learn</h2>
+              <div class="lesson-nav">
+                <button id="btn-prev" class="btn btn-sm" disabled>← Anterior</button>
+                <button id="btn-next" class="btn btn-sm">Siguiente →</button>
+              </div>
+            </div>
+            <div class="lesson-content" id="lesson-content">
+              <!-- Lesson content will be dynamically inserted here -->
+            </div>
+          </div>
+
+          <!-- Practice Panel -->
+          <div class="practice-panel">
+            <div class="practice-header">
+              <h3>Editor SQL</h3>
+              <div class="practice-actions">
+                <button id="btn-run" class="btn btn-primary btn-sm">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                  Ejecutar
+                </button>
+                <button id="btn-clear" class="btn btn-outline btn-sm">Limpiar</button>
+              </div>
+            </div>
+            <div class="editor-container">
+              <textarea id="sql-editor"></textarea>
+            </div>
+            <div class="results-container">
+              <div class="results-header">
+                <h4>Resultados</h4>
+                <span id="execution-time" class="execution-time"></span>
+              </div>
+              <div class="results-content" id="results-content">
+                <p class="placeholder-text">Ejecuta una consulta para ver los resultados</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Toast Notifications -->
+      <div id="toast-container" class="toast-container"></div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
