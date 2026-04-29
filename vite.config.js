@@ -2,20 +2,19 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  base: './',
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'SQL Learn PWA',
-        short_name: 'SQL Learn',
+        name: 'AprendeSQL PWA',
+        short_name: 'AprendeSQL',
         description: 'Aprende SQL de forma interactiva en tu navegador',
         theme_color: '#4F46E5',
         background_color: '#FFFFFF',
         display: 'standalone',
         orientation: 'portrait',
-        scope: '/',
-        start_url: '/',
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -50,6 +49,10 @@ export default defineConfig({
             }
           }
         ]
+      },
+      devOptions: {
+        enabled: true,
+        type: 'module'
       }
     })
   ],

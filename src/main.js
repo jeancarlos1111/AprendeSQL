@@ -12,6 +12,27 @@ let completedModules = new Set();
 let editor = null;
 let deferredPrompt = null;
 
+// Persistence Keys
+const STORAGE_KEY = 'aprendesql_progress';
+
+// Progress Persistence
+function saveProgress() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(completedModules)));
+}
+
+function loadProgress() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try {
+      const array = JSON.parse(saved);
+      completedModules = new Set(array);
+    } catch (e) {
+      console.error('Error loading progress:', e);
+      completedModules = new Set();
+    }
+  }
+}
+
 // DOM Elements
 const moduleList = document.getElementById('module-list');
 const lessonTitle = document.getElementById('lesson-title');
@@ -24,7 +45,12 @@ const btnNext = document.getElementById('btn-next');
 const btnRun = document.getElementById('btn-run');
 const btnClear = document.getElementById('btn-clear');
 const btnInstall = document.getElementById('btn-install');
+const btnFreePractice = document.getElementById('btn-free-practice');
+const btnExport = document.getElementById('btn-export');
+const btnImport = document.getElementById('btn-import');
+const importFileInput = document.getElementById('import-file');
 const toastContainer = document.getElementById('toast-container');
+const dbSchemaContainer = document.getElementById('db-schema');
 
 // Initialize CodeMirror Editor
 function initEditor() {
@@ -95,14 +121,215 @@ function loadModule(index) {
   // Update navigation
   btnPrev.disabled = index === 0;
   btnNext.textContent = index === curriculum.length - 1 ? '¡Completado!' : 'Siguiente →';
+  btnNext.classList.remove('pulse-btn');
 
   renderModuleList();
-  showToast(`Módulo ${index + 1}: ${module.title}`, 'info');
+  showToast(index === 999 ? 'Modo Práctica Libre' : `Módulo ${index + 1}: ${module.title}`, 'info');
+}
+
+// Load Free Practice Mode
+function loadFreePractice() {
+  currentModule = 999;
+
+  lessonTitle.textContent = 'Modo Práctica Libre';
+  lessonContent.innerHTML = `
+    <h3>Explora y Practica</h3>
+    <p>En este modo puedes ejecutar cualquier consulta SQL sin restricciones. Experimenta con las tablas existentes o crea las tuyas propias.</p>
+    
+    <div class="info-box">
+      <strong>📋 Tablas Disponibles</strong>
+      <ul>
+        <li><code>estudiantes</code>: Datos de alumnos</li>
+        <li><code>ciudades</code>: Datos de ciudades</li>
+      </ul>
+    </div>
+
+    <div class="flex gap-sm mt-md">
+      <button id="btn-show-schema" class="btn btn-outline btn-sm" style="color: var(--primary); border-color: var(--primary);">
+        Ver Esquema Gráfico
+      </button>
+      <button id="btn-reset-db" class="btn btn-danger btn-sm">
+        Resetear Base de Datos
+      </button>
+    </div>
+  `;
+
+  // Attach listeners
+  setTimeout(() => {
+    document.getElementById('btn-show-schema')?.addEventListener('click', showSchema);
+    document.getElementById('btn-reset-db')?.addEventListener('click', resetDatabase);
+  }, 100);
+
+  editor.setValue('-- Escribe aquí tus consultas libres\nSELECT * FROM estudiantes;');
+
+  // Clear results
+  resultsContent.innerHTML =
+    '<p class="placeholder-text">Ejecuta una consulta para ver los resultados</p>';
+  executionTime.textContent = '';
+
+  // Update navigation
+  btnPrev.disabled = false;
+  btnNext.textContent = 'Lecciones →';
+
+  renderModuleList();
+  showToast('Modo Práctica Libre activado', 'success');
+}
+
+// Render Database Schema in Sidebar
+function renderSchema() {
+  if (!dbSchemaContainer) return;
+  
+  const schema = database.getSchema();
+  const tableNames = Object.keys(schema);
+  
+  if (tableNames.length === 0) {
+    dbSchemaContainer.innerHTML = '<p class="placeholder-text" style="font-size: 0.8rem; padding: 10px;">No hay tablas creadas.</p>';
+    return;
+  }
+
+  let html = '';
+  tableNames.forEach(table => {
+    html += `
+      <div class="table-card" style="margin-bottom: var(--spacing-md); border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--gray-200);">
+        <div class="table-card-header" style="background: var(--gray-700); padding: 6px 10px; font-size: 0.8rem;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="3" y1="9" x2="21" y2="9"></line>
+            <line x1="9" y1="21" x2="9" y2="9"></line>
+          </svg>
+          ${table.toUpperCase()}
+        </div>
+        <div class="table-card-content" style="padding: 8px 10px; gap: 4px;">
+    `;
+
+    schema[table].forEach(col => {
+      html += `
+        <div class="column-item" style="padding: 2px 0;">
+          <span class="column-name" style="font-size: 0.75rem;">${col.name}</span>
+          <span class="column-type" style="font-size: 0.7rem;">${col.type.toLowerCase()}</span>
+        </div>
+      `;
+    });
+
+    html += `
+        </div>
+      </div>
+    `;
+  });
+
+  dbSchemaContainer.innerHTML = html;
+}
+
+// Show Schema in Results Area
+function showSchema() {
+  renderSchema(); // Always sync sidebar
+  const schema = database.getSchema();
+  const tables = Object.keys(schema);
+  let html = '<h3>Estructura del Esquema</h3>';
+  html += '<div class="schema-visual">';
+
+  tables.forEach(table => {
+    html += `
+      <div class="table-card">
+        <div class="table-card-header">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="3" y1="9" x2="21" y2="9"></line>
+            <line x1="9" y1="21" x2="9" y2="9"></line>
+          </svg>
+          ${table.toUpperCase()}
+        </div>
+        <div class="table-card-content">
+    `;
+
+    schema[table].forEach(col => {
+      html += `
+        <div class="column-item">
+          <span class="column-name">${col.name}</span>
+          <span class="column-type">${col.type.toLowerCase()}</span>
+        </div>
+      `;
+    });
+
+    html += `
+        </div>
+      </div>
+    `;
+  });
+
+  html += '</div>';
+  resultsContent.innerHTML = html;
+  showToast('Esquema visual generado', 'info');
+}
+
+// Reset Database
+function resetDatabase() {
+  if (confirm('¿Estás seguro de que deseas resetear la base de datos? Se perderán todos los cambios que hayas hecho en las tablas de práctica.')) {
+    database.resetDatabase();
+    showToast('Base de datos reseteada a su estado original', 'success');
+    renderSchema();
+    if (currentModule === 999) loadFreePractice();
+  }
+}
+
+// Export Progress
+function exportProgress() {
+  const progress = {
+    completedModules: Array.from(completedModules),
+    exportDate: new Date().toISOString(),
+    version: '1.0'
+  };
+
+  const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(progress));
+  const downloadAnchorNode = document.createElement('a');
+  downloadAnchorNode.setAttribute('href', dataStr);
+  downloadAnchorNode.setAttribute('download', 'aprendesql_progress.json');
+  document.body.appendChild(downloadAnchorNode);
+  downloadAnchorNode.click();
+  downloadAnchorNode.remove();
+
+  showToast('Progreso exportado correctamente', 'success');
+}
+
+// Import Progress
+function importProgress(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.completedModules && Array.isArray(data.completedModules)) {
+        completedModules = new Set(data.completedModules);
+        saveProgress();
+        renderModuleList();
+        loadModule(currentModule >= 999 ? 0 : currentModule);
+        renderSchema();
+        showToast('Progreso importado con éxito', 'success');
+      } else {
+        throw new Error('Formato inválido');
+      }
+    } catch (err) {
+      showToast('Error al importar el archivo: ' + err.message, 'error');
+    }
+  };
+  reader.readAsText(file);
+  // Reset input
+  event.target.value = '';
 }
 
 // Update Progress Badge
 function updateProgress() {
-  progressBadge.textContent = `${completedModules.size}/${curriculum.length} Módulos`;
+  const count = completedModules.size;
+  const total = curriculum.length;
+  let rank = 'Novato';
+
+  if (count === total) rank = 'Maestro SQL';
+  else if (count >= 8) rank = 'Experto';
+  else if (count >= 4) rank = 'Aprendiz';
+
+  progressBadge.textContent = `${count}/${total} - ${rank}`;
 }
 
 // Run Query
@@ -116,6 +343,12 @@ function runQuery() {
   if (result.success) {
     displayResults(result.data);
     executionTime.textContent = `${result.executionTime}ms`;
+
+    // Update schema visualization if DDL or DML that might change schema
+    const upperSql = sql.toUpperCase();
+    if (upperSql.includes('CREATE') || upperSql.includes('DROP') || upperSql.includes('ALTER')) {
+      renderSchema();
+    }
 
     // Check if module should be marked as complete
     checkModuleCompletion(sql);
@@ -169,6 +402,8 @@ function displayError(error) {
 
 // Check Module Completion
 function checkModuleCompletion(sql) {
+  if (currentModule === 999) return; // Skip in free practice
+
   const module = curriculum[currentModule];
   const sqlUpper = sql.toUpperCase().trim();
 
@@ -179,45 +414,74 @@ function checkModuleCompletion(sql) {
     case 'estudiantes':
       isComplete = sqlUpper.includes('SELECT') && sqlUpper.includes('FROM ESTUDIANTES');
       break;
-    case 'filtro':
-      isComplete =
-        sqlUpper.includes('WHERE') && sqlUpper.includes('EDAD') && sqlUpper.includes('>');
+    case 'teoria':
+    case 'teoria_er_deep':
+    case 'teoria_norm_deep':
+      isComplete = sqlUpper.includes('--');
       break;
-    case 'orden':
-      isComplete = sqlUpper.includes('ORDER BY') && sqlUpper.includes('DESC');
+    case 'ddl_create':
+    case 'ddl_create_pro':
+    case 'ddl_create_pro_v2':
+      isComplete = sqlUpper.includes('CREATE TABLE') && 
+                   sqlUpper.includes('EMPLEADOS') && 
+                   sqlUpper.includes('PRIMARY KEY') &&
+                   sqlUpper.includes('NOT NULL') &&
+                   sqlUpper.includes('CHECK');
       break;
-    case 'agregacion':
-      isComplete =
-        sqlUpper.includes('COUNT') || sqlUpper.includes('SUM') || sqlUpper.includes('AVG');
+    case 'select_nombre':
+    case 'select_alias':
+    case 'select_distinct_pro':
+      isComplete = sqlUpper.includes('SELECT') && 
+                   sqlUpper.includes('DISTINCT') && 
+                   sqlUpper.includes('CIUDAD');
       break;
-    case 'grupo':
-      isComplete = sqlUpper.includes('GROUP BY');
+    case 'where_complex':
+    case 'where_pro':
+      isComplete = sqlUpper.includes('WHERE') && 
+                   (sqlUpper.includes('IN') || (sqlUpper.includes('MADRID') && sqlUpper.includes('VALENCIA'))) && 
+                   sqlUpper.includes('EDAD');
+      break;
+    case 'order_limit':
+    case 'order_limit_pro':
+      isComplete = sqlUpper.includes('ORDER BY') && 
+                   sqlUpper.includes('LIMIT') && 
+                   sqlUpper.includes('MADRID');
+      break;
+    case 'avg_edad':
+    case 'group_having_pro':
+      isComplete = sqlUpper.includes('GROUP BY') && 
+                   sqlUpper.includes('HAVING') && 
+                   sqlUpper.includes('COUNT');
       break;
     case 'join':
-      isComplete = sqlUpper.includes('JOIN');
+    case 'join_left_pro':
+      isComplete = sqlUpper.includes('JOIN') && 
+                   sqlUpper.includes('LEFT') && 
+                   sqlUpper.includes('ON');
       break;
-    case 'insert':
-      isComplete = sqlUpper.includes('INSERT INTO');
+    case 'subquery_challenge':
+    case 'subquery_pro':
+      isComplete = sqlUpper.includes('WHERE') && 
+                   sqlUpper.includes('(') && 
+                   sqlUpper.includes('SELECT') && 
+                   sqlUpper.includes(')');
       break;
-    case 'update':
-      isComplete =
-        sqlUpper.includes('UPDATE') && sqlUpper.includes('SET') && sqlUpper.includes('WHERE');
-      break;
-    case 'delete':
-      isComplete = sqlUpper.includes('DELETE FROM') && sqlUpper.includes('WHERE');
+    case 'insert_final':
+      isComplete = sqlUpper.includes('INSERT INTO') && (sqlUpper.includes('ANTIGRAVITY') || sqlUpper.includes('99'));
       break;
   }
 
   if (isComplete && !completedModules.has(currentModule)) {
     completedModules.add(currentModule);
+    saveProgress();
     renderModuleList();
-    showToast('¡Módulo completado! 🎉', 'success');
 
-    // Auto-advance to next module after delay
+    const isChallenge = module.expectedOutput.startsWith('desafio');
+    showToast(isChallenge ? '🏆 ¡RETO SUPERADO! 🏆' : '🎉 ¡Módulo completado con éxito! 🎉', 'success');
+
+    // Highlight Next button
     if (currentModule < curriculum.length - 1) {
-      setTimeout(() => {
-        loadModule(currentModule + 1);
-      }, 2000);
+      btnNext.classList.add('pulse-btn');
     }
   }
 }
@@ -274,7 +538,7 @@ function setupPWAInstall() {
       const { outcome } = await deferredPrompt.userChoice;
 
       if (outcome === 'accepted') {
-        showToast('¡Gracias por instalar SQL Learn!', 'success');
+        showToast('¡Gracias por instalar AprendeSQL!', 'success');
       }
 
       deferredPrompt = null;
@@ -300,6 +564,10 @@ function setupEventListeners() {
 
   btnRun.addEventListener('click', runQuery);
   btnClear.addEventListener('click', clearEditor);
+  btnFreePractice.addEventListener('click', loadFreePractice);
+  btnExport.addEventListener('click', exportProgress);
+  btnImport.addEventListener('click', () => importFileInput.click());
+  importFileInput.addEventListener('change', importProgress);
 }
 
 // Initialize App
@@ -307,11 +575,12 @@ function init() {
   initEditor();
   setupEventListeners();
   setupPWAInstall();
+  loadProgress();
   loadModule(0);
 
   // Welcome message
   setTimeout(() => {
-    showToast('¡Bienvenido a SQL Learn! Comienza tu aprendizaje', 'success');
+    showToast('¡Bienvenido a AprendeSQL! Comienza tu aprendizaje', 'success');
   }, 500);
 }
 

@@ -2,7 +2,13 @@ import alasql from 'alasql';
 
 class Database {
   constructor() {
-    this.db = alasql('DATABASE sqlLearnDB');
+    try {
+      alasql('CREATE DATABASE IF NOT EXISTS AprendeSQLDB');
+      alasql('USE AprendeSQLDB');
+    } catch (e) {
+      // Si hay error al crear/usar, AlaSQL usará la base por defecto
+      console.log('Using default database');
+    }
     this.initializeSampleData();
   }
 
@@ -14,15 +20,17 @@ class Database {
 
     // Insertar datos de ejemplo
     const estudiantesData = [
-      { id: 1, nombre: 'Ana García', edad: 20, ciudad: 'Madrid' },
+      { id: 1, nombre: 'Ana García', edad: 21, ciudad: 'Madrid' },
       { id: 2, nombre: 'Carlos Ruiz', edad: 22, ciudad: 'Barcelona' },
-      { id: 3, nombre: 'María López', edad: 19, ciudad: 'Valencia' },
+      { id: 3, nombre: 'María López', edad: 22, ciudad: 'Valencia' },
       { id: 4, nombre: 'Juan Sánchez', edad: 21, ciudad: 'Sevilla' },
-      { id: 5, nombre: 'Laura Martín', edad: 23, ciudad: 'Bilbao' }
+      { id: 5, nombre: 'Laura Martín', edad: 23, ciudad: 'Bilbao' },
+      { id: 6, nombre: 'Pedro Gómez', edad: 20, ciudad: 'Madrid' },
+      { id: 7, nombre: 'Lucía Fernández', edad: 22, ciudad: 'Madrid' }
     ];
 
     // Verificar si ya hay datos
-    const count = alasql('SELECT COUNT(*) AS total FROM estudiantes')[0].total;
+    const count = alasql('SELECT COUNT(*) AS [total] FROM estudiantes')[0].total;
     if (count === 0) {
       estudiantesData.forEach(est => {
         alasql('INSERT INTO estudiantes VALUES (?, ?, ?, ?)', [
@@ -47,7 +55,7 @@ class Database {
       { id: 5, nombre_ciudad: 'Bilbao', poblacion: 346000 }
     ];
 
-    const ciudadesCount = alasql('SELECT COUNT(*) AS total FROM ciudades')[0].total;
+    const ciudadesCount = alasql('SELECT COUNT(*) AS [total] FROM ciudades')[0].total;
     if (ciudadesCount === 0) {
       ciudadesData.forEach(ciudad => {
         alasql('INSERT INTO ciudades VALUES (?, ?, ?)', [
@@ -69,12 +77,28 @@ class Database {
 
   executeQuery(sql) {
     const startTime = performance.now();
+    
+    // Si la consulta está vacía o solo contiene comentarios, no la ejecutamos en AlaSQL
+    // Limpiamos comentarios de línea (--) y bloques (/* */) para verificar si hay contenido real
+    const cleanSql = sql
+      .replace(/--.*$/gm, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .trim();
+
+    if (!cleanSql) {
+      return {
+        success: true,
+        data: [],
+        executionTime: (performance.now() - startTime).toFixed(2)
+      };
+    }
+
     try {
       const result = alasql(sql);
       const endTime = performance.now();
       return {
         success: true,
-        data: result,
+        data: Array.isArray(result) ? result : [result],
         executionTime: (endTime - startTime).toFixed(2)
       };
     } catch (error) {
@@ -95,6 +119,25 @@ class Database {
   getTableNames() {
     const tables = alasql('SHOW TABLES');
     return tables.map(t => Object.values(t)[0]);
+  }
+
+  getSchema() {
+    const tableNames = this.getTableNames();
+    const schema = {};
+
+    tableNames.forEach(tableName => {
+      try {
+        const columns = alasql(`SHOW COLUMNS FROM ${tableName}`);
+        schema[tableName] = columns.map(col => ({
+          name: col.columnid,
+          type: col.dbtypeid
+        }));
+      } catch (e) {
+        console.error(`Error getting columns for ${tableName}:`, e);
+      }
+    });
+
+    return schema;
   }
 }
 

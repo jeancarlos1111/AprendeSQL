@@ -1,8 +1,8 @@
-# SQL Learn PWA - Herramienta Interactiva de Aprendizaje de SQL
+# AprendeSQL PWA - Herramienta Interactiva de Aprendizaje de SQL
 
 ## 📋 Descripción del Proyecto
 
-**SQL Learn PWA** es una herramienta educativa interactiva diseñada para que estudiantes aprendan SQL directamente desde su navegador web, sin necesidad de configuraciones complejas ni dependencias de backend.
+**AprendeSQL PWA** es una herramienta educativa interactiva diseñada para que estudiantes aprendan SQL directamente desde su navegador web, sin necesidad de configuraciones complejas ni dependencias de backend.
 
 ## 🎯 Objetivo Principal
 
@@ -34,15 +34,17 @@ Proporcionar una plataforma accesible, gratuita y offline-first que permita a lo
 
 - **Aprendizaje paso a paso**: Lecciones estructuradas desde conceptos básicos hasta avanzados
 - **Módulos progresivos**:
-  1. Introducción a las bases de datos
-  2. Consultas SELECT básicas
-  3. Filtrado con WHERE
-  4. Ordenamiento con ORDER BY
-  5. Funciones agregadas (COUNT, SUM, AVG, etc.)
-  6. JOINs y relaciones entre tablas
-  7. Subconsultas
-  8. Modificación de datos (INSERT, UPDATE, DELETE)
-  9. Creación y modificación de tablas
+  1. **Introducción a las bases de datos**: Conceptos generales, SGBD, bases de datos relacionales vs NoSQL.
+  2. **Modelado Entidad-Relación (ER)**: Entidades, atributos, y tipos de relaciones (1:1, 1:N, N:M).
+  3. **Normalización de Bases de Datos**: Claves primarias (PK), foráneas (FK) y las formas normales (1NF, 2NF, 3NF).
+  4. **Creación y modificación de tablas (DDL)**: `CREATE TABLE`, tipos de datos, `ALTER TABLE`.
+  5. **Consultas SELECT básicas**: `SELECT`, `AS`, `DISTINCT`.
+  6. **Filtrado con WHERE**: Operadores lógicos, `LIKE`, `IN`, `BETWEEN`.
+  7. **Ordenamiento y Paginación**: `ORDER BY`, `LIMIT`.
+  8. **Funciones agregadas**: `COUNT`, `SUM`, `AVG`, `MAX`, `MIN` y `GROUP BY`.
+  9. **JOINs y relaciones entre tablas**: `INNER JOIN`, `LEFT JOIN` aplicando relaciones de bases de datos.
+  10. **Subconsultas**: Consultas anidadas.
+  11. **Modificación de datos (DML)**: `INSERT`, `UPDATE`, `DELETE`.
 
 - **Ejemplos interactivos**: Cada concepto incluye ejemplos ejecutables
 - **Ejercicios prácticos**: Retos con validación automática
@@ -84,7 +86,7 @@ Proporcionar una plataforma accesible, gratuita y offline-first que permita a lo
 ## 📁 Estructura del Proyecto
 
 ```
-sql-learn-pwa/
+aprendesql-pwa/
 ├── public/
 │   ├── manifest.json
 │   ├── icons/
@@ -97,8 +99,9 @@ sql-learn-pwa/
 │   │   └── ProgressBar/
 │   ├── lessons/
 │   │   ├── module-01-intro/
-│   │   ├── module-02-select/
-│   │   ├── module-03-where/
+│   │   ├── module-02-er-model/
+│   │   ├── module-03-normalization/
+│   │   ├── module-04-ddl/
 │   │   └── ...
 │   ├── data/
 │   │   ├── sample-databases/
