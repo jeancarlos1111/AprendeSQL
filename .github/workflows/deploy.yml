@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main  # Cambia esto si tu rama principal tiene otro nombre (ej. master)
+      - main
 
 permissions:
   contents: read
@@ -21,13 +21,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+
+      - name: Install pnpm 📦
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
 
       - name: Install Dependencies 📦
-        run: npm install
+        run: pnpm install
 
       - name: Build 🏗️
-        run: npm run build
+        run: pnpm run build
 
       - name: Setup Pages 🌐
         uses: actions/configure-pages@v4
